@@ -48,17 +48,9 @@
 		let {uid = 0} = req.user || {};
 
 		Comments.getTopicIDByCommentID(commentID, blogger, (err, tid) => {
-			let disabled = false;
 
 			async.parallel({
-				posts: (next) => {
-					if (disabled) {
-						next(err, []);
-					}
-					else {
-						topics.getTopicPosts(tid, `tid:${tid}:posts`, req.params.pagination * 10, 9 + req.params.pagination * 9, uid, true, next);
-					}
-				},
+				posts: (next) => topics.getTopicPosts(tid, `tid:${tid}:posts`, req.params.pagination * 10, 9 + req.params.pagination * 9, uid, true, next),
 				postCount: (next) => topics.getTopicField(tid, 'postcount', next),
 				user: (next) => user.getUserData(uid, next),
 				isAdministrator: (next) => user.isAdministrator(uid, next),
