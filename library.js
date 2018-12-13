@@ -1,111 +1,89 @@
-(function(module) {
-	"use strict";
+(function (module) {
 
-	var Comments = {};
+	let Comments = {};
 
-	var db = require.main.require('./src/database'),
-		meta = require.main.require('./src/meta'),
-		posts = require.main.require('./src/posts'),
-		topics = require.main.require('./src/topics'),
-		user = require.main.require('./src/user'),
-		groups = require.main.require('./src/groups'),
-		fs = module.parent.require('fs'),
-		path = module.parent.require('path'),
-		async = module.parent.require('async'),
-		winston = module.parent.require('winston');
+	let db = require.main.require('./src/database');
+	let meta = require.main.require('./src/meta');
+	let posts = require.main.require('./src/posts');
+	let topics = require.main.require('./src/topics');
+	let user = require.main.require('./src/user');
+	let groups = require.main.require('./src/groups');
+	let fs = module.parent.require('fs');
+	let path = module.parent.require('path');
+	let async = module.parent.require('async');
+	let winston = module.parent.require('winston');
 
 	module.exports = Comments;
 
 	function CORSSafeReq (req) {
-		var hostUrls = (meta.config['blog-comments:url'] || '').split(','),
-			url;
+		let hostUrls = (meta.config['blog-comments:url'] || '').split(',');
 
-		hostUrls.forEach(function(hostUrl) {
-			hostUrl = hostUrl.trim();
-			if (hostUrl[hostUrl.length - 1] === '/') {
-				hostUrl = hostUrl.substring(0, hostUrl.length - 1);
-			}
-
-			if (hostUrl === req.get('origin')) {
-				url = req.get('origin');
-			}
-		});
+		let url = hostUrls
+			.map(hostUrl => hostUrl.trim())
+			.filter(hostUrl => hostUrl.startsWith(req.get('origin')))
+			.pop();
 
 		if (!url) {
-			winston.warn('[nodebb-plugin-blog-comments2] Origin (' + req.get('origin') + ') does not match hostUrls: ' + hostUrls.join(', '));
+			winston.warn(`[nodebb-plugin-blog-comments2] Origin (${req.get('origin')}) does not match hostUrls: ${hostUrls.join(', ')}`);
 		}
 		return url;
 	}
 
 	function CORSFilter (req, res) {
-		var url = CORSSafeReq(req);
+		let url = CORSSafeReq(req);
 
-		if (!url) {
-			return;
+		if (url) {
+			res.header('Access-Control-Allow-Origin', url);
+			res.header('Access-Control-Allow-Headers', 'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept');
+			res.header('Access-Control-Allow-Credentials', 'true');
 		}
-
-		res.header("Access-Control-Allow-Origin", url);
-		res.header('Access-Control-Allow-Headers', 'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept');
-		res.header("Access-Control-Allow-Credentials", "true");
-		return res;
 	}
 
-	Comments.getTopicIDByCommentID = function(commentID, blogger, callback) {
-		db.getObjectField('blog-comments:'+blogger, commentID, function(err, tid) {
-			callback(err, tid);
-		});
-	};
+	Comments.getTopicIDByCommentID = (commentID, blogger, callback) =>
+		db.getObjectField(`blog-comments:${blogger}`, commentID, (err, tid) => callback(err, tid));
 
 	Comments.getCommentData = function(req, res) {
-		var commentID = req.params.id,
-			blogger = req.params.blogger || 'default',
-			uid = req.user ? req.user.uid : 0;
+		let commentID = req.params.id;
+		let blogger = req.params.blogger || 'default';
+		let {uid = 0} = req.user || {};
 
-		Comments.getTopicIDByCommentID(commentID, blogger, function(err, tid) {
-			var disabled = false;
+		Comments.getTopicIDByCommentID(commentID, blogger, (err, tid) => {
+			let disabled = false;
 
 			async.parallel({
-				posts: function(next) {
+				posts: (next) => {
 					if (disabled) {
 						next(err, []);
-					} else {
-						topics.getTopicPosts(tid, 'tid:' + tid + ':posts', 0 + req.params.pagination * 10, 9 + req.params.pagination * 9, uid, true, next);
+					}
+					else {
+						topics.getTopicPosts(tid, `tid:${tid}:posts`, req.params.pagination * 10, 9 + req.params.pagination * 9, uid, true, next);
 					}
 				},
-				postCount: function(next) {
-					topics.getTopicField(tid, 'postcount', next);
-				},
-				user: function(next) {
-					user.getUserData(uid, next);
-				},
-				isAdministrator: function(next) {
-					user.isAdministrator(uid, next);
-				},
-				isPublisher: function(next) {
-					groups.isMember(uid, 'publishers', next);
-				},
-				category: function(next) {
-					topics.getCategoryData(tid, next);
-				},
-				mainPost: function(next) {
-					topics.getMainPost(tid, uid, next);
-				}
-			}, function(err, data) {
+				postCount: (next) => topics.getTopicField(tid, 'postcount', next),
+				user: (next) => user.getUserData(uid, next),
+				isAdministrator: (next) => user.isAdministrator(uid, next),
+				isPublisher: (next) => groups.isMember(uid, 'publishers', next),
+				category: (next) => topics.getCategoryData(tid, next),
+				mainPost: (next) => topics.getMainPost(tid, uid, next)
+			}, (err, data) => {
 				CORSFilter(req, res);
 
-				var posts = data.posts.filter(function(post) {
-					return post.deleted === false;
-				});
-				posts.forEach(function(post){
-					post.isReply = post.hasOwnProperty('toPid') && parseInt(post.toPid) !== parseInt(data.tid) - 1;
-					post.parentUsername = post.parent ? post.parent.username || '' : '';
-					post.deletedReply = (post.parent && !post.parent.username) ? true : false;
-				});
+				let posts = data.posts
+					.filter(post => post.deleted === false)
+					.map(post => Object.assign(post, {
+						isReply: post.hasOwnProperty('toPid') && parseInt(post.toPid) !== parseInt(data.tid) - 1,
+						parentUsername: post.parent ? post.parent.username || '' : '',
+						deletedReply: !!(post.parent && !post.parent.username)
+					}));
 
-				var top = true;
-				var bottom = false;
-				var compose_location = meta.config['blog-comments:compose-location'];
-				if (compose_location == "bottom"){ bottom = true; top = false;}
+				let top = true;
+				let bottom = false;
+				let compose_location = meta.config['blog-comments:compose-location'];
+
+				if (compose_location === 'bottom') {
+					bottom = true;
+					top = false;
+				}
 
 				res.json({
 					posts: posts,
@@ -128,91 +106,85 @@
 	};
 
 	function get_redirect_url(url, err) {
-		var rurl = url + '#nodebb-comments';
+		let rurl = url + '#nodebb-comments';
 		if (url.indexOf('#') !== -1) {
 			// compatible for mmmw's blog, he uses hash in url;
 			rurl = url;
 		}
 
-		if(err) {
-			rurl = url + '?error=' + err.message + '#nodebb-comments';
+		if (err) {
+			rurl = `${url}?error=${err.message}#nodebb-comments`;
 			if (url.indexOf('#') !== -1) {
-				rurl = url.split('#')[0] + '?error=' + err.message + '#' + url.split('#')[1];
+				rurl = `${url.split('#')[0]}?error=${err.message}#${url.split('#')[1]}`;
 			}
 		}
 		return rurl;
 	}
 
-	Comments.votePost = function (req, res, callback) {
+	Comments.votePost = (req, res, callback) => {
 		if (!CORSSafeReq(req)) {
 			return;
 		}
-		var toPid = req.body.toPid,
-		    isUpvote = JSON.parse(req.body.isUpvote),
-			uid = req.user ? req.user.uid : 0;
+		let toPid = req.body.toPid;
+		let isUpvote = JSON.parse(req.body.isUpvote);
+		let {uid = 0} = req.user || {};
 
-		var func = isUpvote ? 'upvote' : 'unvote';
+		let func = isUpvote ? 'upvote' : 'unvote';
 
-		posts[func](toPid, uid, function (err, result) {
+		posts[func](toPid, uid, (err, result) => {
 			CORSFilter(req, res);
 			res.json({error: err && err.message, result: result});
 		});
 	};
 
-	Comments.bookmarkPost = function (req, res, callback) {
+	Comments.bookmarkPost = (req, res, callback) => {
 		if (!CORSSafeReq(req)) {
 			return;
 		}
-		var toPid = req.body.toPid,
-			isBookmark = JSON.parse(req.body.isBookmark),
-			uid = req.user ? req.user.uid : 0;
+		let toPid = req.body.toPid;
+		let isBookmark = JSON.parse(req.body.isBookmark);
+		let {uid = 0} = req.user || {};
 
-		var func = isBookmark ? 'bookmark' : 'unbookmark';
+		let func = isBookmark ? 'bookmark' : 'unbookmark';
 
-		posts[func](toPid, uid, function (err, result) {
+		posts[func](toPid, uid, (err, result) => {
 			CORSFilter(req, res);
 			res.json({error: err && err.message, result: result});
 		});
 	};
 
-	Comments.replyToComment = function(req, res, callback) {
-		var content = req.body.content,
-			tid = req.body.tid,
-			url = req.body.url,
-			toPid = req.body.toPid,
-			uid = req.user ? req.user.uid : 0;
+	Comments.replyToComment = (req, res, callback) => {
+		let content = req.body.content;
+		let tid = req.body.tid;
+		let url = req.body.url;
+		let toPid = req.body.toPid;
+		let {uid = 0} = req.user || {};
 
 		topics.reply({
 			tid: tid,
 			uid: uid,
 			toPid: toPid,
 			content: content
-		}, function(err, postData) {
-			res.redirect(get_redirect_url(url, err));
-		});
+		}, (err, postData) => res.redirect(get_redirect_url(url, err)));
 	};
 
-	Comments.publishArticle = function(req, res, callback) {
-		var markdown = req.body.markdown,
-			title = req.body.title,
-			url = req.body.url,
-			commentID = req.body.id,
-			tags = req.body.tags,
-			blogger = req.body.blogger || 'default',
-			uid = req.user ? req.user.uid : 0,
-			cid = JSON.parse(req.body.cid);
+	Comments.publishArticle = (req, res, callback) => {
+		let markdown = req.body.markdown;
+		let title = req.body.title;
+		let url = req.body.url;
+		let commentID = req.body.id;
+		let tags = req.body.tags;
+		let blogger = req.body.blogger || 'default';
+		let {uid = 0} = req.user || {};
+		let cid = JSON.parse(req.body.cid);
 
 		if (cid === -1) {
-			var hostUrls = (meta.config['blog-comments:url'] || '').split(','),
-				position = 0;
+			let hostUrls = (meta.config['blog-comments:url'] || '').split(',');
+			let position = 0;
 
-			hostUrls.forEach(function(hostUrl, i) {
+			hostUrls.forEach((hostUrl, i) => {
 				hostUrl = hostUrl.trim();
-				if (hostUrl[hostUrl.length - 1] === '/') {
-					hostUrl = hostUrl.substring(0, hostUrl.length - 1);
-				}
-
-				if (hostUrl === req.get('origin')) {
+				if (hostUrl.startsWith(req.get('origin'))) {
 					position = i;
 				}
 			});
@@ -222,13 +194,9 @@
 		}
 
 		async.parallel({
-			isAdministrator: function(next) {
-				user.isAdministrator(uid, next);
-			},
-			isPublisher: function(next) {
-				groups.isMember(uid, 'publishers', next);
-			}
-		}, function(err, userStatus) {
+			isAdministrator: (next) => user.isAdministrator(uid, next),
+			isPublisher: (next) => groups.isMember(uid, 'publishers', next)
+		}, (err, userStatus) => {
 			if (!userStatus.isAdministrator && !userStatus.isPublisher) {
 				return res.json({error: "Only Administrators or members of the publishers group can publish articles"});
 			}
@@ -242,15 +210,15 @@
 				externalLink: url,  // save externalLink and externalComment to topic, only v2mm theme can do this.
 				externalComment: markdown,
 				cid: cid
-			}, function(err, result) {
+			}, (err, result) => {
 				if (!err && result && result.postData && result.postData.tid) {
-					posts.setPostField(result.postData.pid, 'blog-comments:url', url, function(err) {
+					posts.setPostField(result.postData.pid, 'blog-comments:url', url, (err) => {
 						if (err) {
 							return res.json({error: "Unable to post topic", result: result});
 						}
 
-						db.setObjectField('blog-comments:'+blogger, commentID, result.postData.tid);
-						var rurl = (req.header('Referer') || '/') + '#nodebb-comments';
+						db.setObjectField(`blog-comments:${blogger}`, commentID, result.postData.tid);
+						let rurl = `${(req.header('Referer') || '/')}#nodebb-comments`;
 						if (url.indexOf('#') !== -1) {
 							// compatible for mmmw's blog, he uses hash in url;
 							rurl = url;
@@ -258,7 +226,8 @@
 
 						res.redirect(rurl);
 					});
-				} else {
+				}
+				else {
 					res.json({error: "Unable to post topic", result: result});
 				}
 			});
@@ -266,23 +235,23 @@
 
 	};
 
-	Comments.addLinkbackToArticle = function(post, callback) {
-		var hostUrls = (meta.config['blog-comments:url'] || '').split(','),
-			position;
+	Comments.addLinkbackToArticle = (post, callback) => {
+		let hostUrls = (meta.config['blog-comments:url'] || '').split(',');
+		let position;
 
-		posts.getPostField(post.pid, 'blog-comments:url', function(err, url) {
+		posts.getPostField(post.pid, 'blog-comments:url', (err, url) => {
 			if (url) {
-				hostUrls.forEach(function(hostUrl, i) {
+				hostUrls.forEach((hostUrl, i) => {
 					if (url.indexOf(hostUrl.trim().replace(/^https?:\/\//, '')) !== -1) {
 						position = i;
 					}
 				});
 
-				var blogName = (meta.config['blog-comments:name'] || '');
+				let blogName = (meta.config['blog-comments:name'] || '');
 				blogName = parseInt(blogName.split(',')[position], 10) || parseInt(blogName.split(',')[0], 10) || 1;
 
 				post.profile.push({
-					content: "Posted from <strong><a href="+ url +" target='blank'>" + blogName + "</a></strong>"
+					content: `Posted from <strong><a href="${url}" target="_blank">${blogName}</a></strong>`
 				});
 			}
 
@@ -290,11 +259,11 @@
 		});
 	};
 
-	Comments.addAdminLink = function(custom_header, callback) {
+	Comments.addAdminLink = (custom_header, callback) => {
 		custom_header.plugins.push({
-			"route": "/blog-comments",
-			"icon": "fa-book",
-			"name": "Blog Comments"
+			'route': '/blog-comments',
+			'icon': 'fa-book',
+			'name': 'Blog Comments'
 		});
 
 		callback(null, custom_header);
@@ -305,13 +274,11 @@
 	}
 
 	Comments.init = function(params, callback) {
-		var app = params.router,
-			middleware = params.middleware,
-			controllers = params.controllers;
+		let app = params.router;
+		let middleware = params.middleware;
+		let controllers = params.controllers;
 
-		fs.readFile(path.resolve(__dirname, './public/templates/comments/comments.tpl'), function (err, data) {
-			Comments.template = data.toString();
-		});
+		fs.readFile(path.resolve(__dirname, './public/templates/comments/comments.tpl'), (err, data) => Comments.template = data.toString());
 
 		app.get('/comments/get/:blogger/:id/:pagination?', middleware.applyCSRF, Comments.getCommentData);
 		app.post('/comments/reply', Comments.replyToComment);

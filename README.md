@@ -1,3 +1,4 @@
+Yet one fork with russian translation and bug fixes and nodebb v1.11.0 support
 This plugin is a folk from [NodeBB Blog Comments](https://github.com/psychobunny/nodebb-plugin-blog-comments), I just added some more features and fixed some bugs to it.
 
 * Support multiple blogs, use `articleID` and `blogger` to distinguish posts from different blogs, so this is kinda break change to the original nodebb-plugin-blog-comments.
@@ -17,16 +18,6 @@ The original [NodeBB Blog Comments](https://github.com/psychobunny/nodebb-plugin
 The comments are exposed to any plugin you have built into the core, so it is completely possible to have emoticons, embedded video, and/or whatever else you want in the comments section of your blog.
 
 Articles are published to a forum category of your choice, and will gain a tag that links it back to the original article.
-
-
-## Screenshots
-
-* Style 1
-![style1](style1.png)
-
-* Style 2
-![style2](style2.png)
-
 
 ## Installation
 
