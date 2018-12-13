@@ -2,7 +2,7 @@
 	<div class="top-tool-box">
 		<a href="" class='need-more-share2'
 		    data-shareUrl='{redirect_url}'
-		    title="Share"
+		    title="Расшарить"
 		>
 			<i class="i-share icon-share" aria-hidden="true"></i>
 		</a>
@@ -10,7 +10,7 @@
 		<a component="post/bookmark" style="color: inherit; text-decoration: none;" title="Mark">
 			<i class="i-bookmark icon-bookmark"></i>
 		</a>
-		<a component="post/upvote" style="color: inherit; text-decoration: none; margin-right: 5px;" title="Upvote">
+		<a component="post/upvote" style="color: inherit; text-decoration: none; margin-right: 5px;" title="Плюсую">
 			<i class="i-upvote icon-thumbs-up-alt"></i>
 			<span class="upvote-count">
 			</span>
@@ -31,10 +31,10 @@
 		</div>
 
 		<form action="{relative_path}/comments/reply" class="clearfix" method="post">
-			<textarea id="nodebb-content" class="form-control" name="content" placeholder="Join the conversation" rows="3"></textarea>
+			<textarea id="nodebb-content" class="form-control" name="content" placeholder="Присоединиться к обсуждению" rows="3"></textarea>
 		<!-- IF isLoggedIn -->
-			<small>Signed in as <strong>{user.username}</strong>. <strong id="nodebb-error"></strong></small>
-			<button class="btn btn-primary">Post a Reply</button>
+			<small>Юзверь <strong>{user.username}</strong>. <strong id="nodebb-error"></strong></small>
+			<button class="btn btn-primary">Ответить</button>
 			<input type="hidden" name="_csrf" value="{token}" />
 			<input type="hidden" name="tid" value="{tid}" />
 			<input type="hidden" name="url" value="{redirect_url}" />
@@ -42,8 +42,8 @@
 		<br />
 		<!-- ELSE -->
 		</form>
-		<button class="btn btn-primary" id="nodebb-register">Register</button>
-		<button class="btn btn-primary" id="nodebb-login">Login</button>
+		<button class="btn btn-primary" id="nodebb-register">Регистрация</button>
+		<button class="btn btn-primary" id="nodebb-login">Вход</button>
 
 		<!-- This button is here just for making the css margin right -->
 		<button style="visibility: hidden; padding-top: 8px;"> </button>
@@ -87,7 +87,7 @@
 									<!-- <a component="post/quote"><i class="fa fa-quote-left"></i> quote</a> -->
 								</span>
 								<a href="{relative_path}/user/{user.userslug}" style="color: inherit; text-decoration: none;"><strong>{user.username}</strong></a>
-								<span title="{posts.timestampISO}">commented {posts.timestamp}</span>
+								<span title="{posts.timestampISO}">прокомментировано {posts.timestamp}</span>
 								<!-- IF posts.isReply -->
 								<!-- IF !posts.deletedReply -->
 									<button component="post/parent" class="reply-label no-select" data-topid="{posts.toPid}">
@@ -103,8 +103,8 @@
 				</div>
 
 				<form action="{relative_path}/comments/reply" method="post" class="sub-reply-input hidden">
- 					<textarea id="nodebb-content" class="form-control" name="content" placeholder="Join the conversation" rows="3"></textarea>
- 					<button class="btn btn-primary">Reply to {user.username}</button>
+ 					<textarea id="nodebb-content" class="form-control" name="content" placeholder="Присоединиться к обсуждению" rows="3"></textarea>
+ 					<button class="btn btn-primary">Ответить {user.username}</button>
  					<input type="hidden" name="_csrf" value="{token}" />
  					<input type="hidden" name="tid" value="{tid}" />
  					<input type="hidden" name="toPid" value="{posts.pid}" />
@@ -125,18 +125,18 @@
 			<!-- ENDIF isLoggedIn -->
 		</div>
 		<form action="{relative_path}/comments/reply" method="post">
-			<textarea id="nodebb-content" class="form-control" name="content" placeholder="Join the conversation" rows="3"></textarea>
+			<textarea id="nodebb-content" class="form-control" name="content" placeholder="Присоединиться к обсуждению" rows="3"></textarea>
 		<!-- IF isLoggedIn -->
-			<small>Signed in as <strong>{user.username}</strong>. <strong id="nodebb-error"></strong></small>
-			<button class="btn btn-primary">Post a Reply</button>
+			<small>Залогинен как <strong>{user.username}</strong>. <strong id="nodebb-error"></strong></small>
+			<button class="btn btn-primary">Ответить</button>
 			<input type="hidden" name="_csrf" value="{token}" />
 			<input type="hidden" name="tid" value="{tid}" />
 			<input type="hidden" name="url" value="{redirect_url}" />
 		</form>
 		<!-- ELSE -->
 		</form>
-		<button class="btn btn-primary" id="nodebb-register">Register</button>
-		<button class="btn btn-primary" id="nodebb-login">Login</button>
+		<button class="btn btn-primary" id="nodebb-register">Регистарция</button>
+		<button class="btn btn-primary" id="nodebb-login">Вход</button>
 
 		<!-- This button is here just for making the css margin right -->
 		<button style="visibility: hidden; padding-top: 8px;"> </button>
@@ -144,13 +144,13 @@
 		<!-- ENDIF isLoggedIn -->
 	<!-- ENDIF atBottom -->
 
-	<small class="nodebb-copyright">Powered by <a href="{relative_path}" target="_blank">{siteTitle}</a> &bull; <a href="{relative_path}/topic/{tid}">View original thread</a></small>
-	<button class="btn btn-primary" <!-- IF !posts.length -->style="display: none"<!-- ENDIF !posts.length --> id="nodebb-load-more">Load more comments...</button>
+	<small class="nodebb-copyright"><a href="{relative_path}/topic/{tid}">Перейти в тред</a></small>
+	<button class="btn btn-primary" <!-- IF !posts.length -->style="display: none"<!-- ENDIF !posts.length --> id="nodebb-load-more">Еще комметарии...</button>
 <!-- ELSE -->
-	{siteTitle} Commenting has been disabled.
+	{siteTitle} комментарии пока отключены
 	<!-- IF isAdmin -->
 	<form action="{relative_path}/comments/publish" method="post">
-		<button class="btn btn-primary">Publish this article to {siteTitle}</button>
+		<button class="btn btn-primary">Опубликовать на форуме {siteTitle}</button>
 		<input type="hidden" name="markdown" id="nodebb-content-markdown" />
 		<input type="hidden" name="title" id="nodebb-content-title" />
 		<input type="hidden" name="cid" id="nodebb-content-cid" />
