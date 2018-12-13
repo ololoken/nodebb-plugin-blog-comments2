@@ -61,7 +61,7 @@
 				CORSFilter(req, res);
 
 				let posts = data.posts
-					.filter(post => post.deleted === false)
+					//.filter(post => post.deleted === false)
 					.map(post => Object.assign(post, {
 						isReply: post.hasOwnProperty('toPid') && parseInt(post.toPid) !== parseInt(data.tid) - 1,
 						parentUsername: post.parent ? post.parent.username || '' : '',
