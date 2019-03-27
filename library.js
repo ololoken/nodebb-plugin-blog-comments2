@@ -253,7 +253,7 @@
 
 	Comments.addAdminLink = (custom_header, callback) => {
 		custom_header.plugins.push({
-			'route': '/blog-comments',
+			'route': '/plugins/blog-comments',
 			'icon': 'fa-book',
 			'name': 'Blog Comments'
 		});
@@ -262,7 +262,7 @@
 	};
 
 	function renderAdmin(req, res, callback) {
-		res.render('comments/admin', {});
+		res.render('admin/plugins/blog-comments', {});
 	}
 
 	Comments.init = function(params, callback) {
@@ -270,7 +270,7 @@
 		let middleware = params.middleware;
 		let controllers = params.controllers;
 
-		fs.readFile(path.resolve(__dirname, './public/templates/comments/comments.tpl'), (err, data) => Comments.template = data.toString());
+		fs.readFile(path.resolve(__dirname, './templates/comments/comments.tpl'), (err, data) => Comments.template = data.toString());
 
 		app.get('/comments/get/:blogger/:id/:pagination?', middleware.applyCSRF, Comments.getCommentData);
 		app.post('/comments/reply', Comments.replyToComment);
@@ -278,8 +278,8 @@
 		app.post('/comments/vote', Comments.votePost);
 		app.post('/comments/bookmark', Comments.bookmarkPost);
 
-		app.get('/admin/blog-comments', middleware.admin.buildHeader, renderAdmin);
-		app.get('/api/admin/blog-comments', renderAdmin);
+		app.get('/admin/plugins/blog-comments', middleware.admin.buildHeader, renderAdmin);
+		app.get('/api/admin/plugins/blog-comments', renderAdmin);
 
 		callback();
 	};
