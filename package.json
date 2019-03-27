@@ -1,28 +1,11 @@
 {
-  "author": {
-    "name": "River",
-    "email": "revir.qing@gmail.com"
-  },
-  "bugs": {
-    "url": "https://github.com/revir/nodebb-plugin-blog-comments2/issues"
-  },
-  "dependencies": {},
   "description": "NodeBB Blog Comments (Ghost / WP Commenting Engine)",
-  "devDependencies": {},
-  "directories": {},
   "license": "BSD-2-Clause",
   "main": "library.js",
-  "maintainers": [
-    {
-      "name": "river.qing",
-      "email": "revir.qing@gmail.com"
-    }
-  ],
-  "name": "nodebb-plugin-blog-comments2-ru",
+  "name": "nodebb-plugin-blog-comments2",
   "nbbpm": {
     "compatibility": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^1.0.0 || ^1.2.0 || ^1.3.0"
   },
-  "optionalDependencies": {},
   "readme": "ERROR: No README data found!",
   "version": "0.9.9"
 }

@@ -2,11 +2,11 @@
 	"id": "nodebb-plugin-blog-comments2",
 	"name": "NodeBB Blog Comments2",
 	"description": "Lets NodeBB act as a comments engine/widget for your blog.",
-	"url": "https://github.com/revir/nodebb-plugin-blog-comments2",
+	"url": "https://github.com/ololoken/nodebb-plugin-blog-comments2",
 	"library": "library.js",
 	"hooks": [
-		{
-			"hook": "filter:admin.header.build", "method": "addAdminLink"
+          {
+	    "hook": "filter:admin.header.build", "method": "addAdminLink"
 		},
 		{
 			"hook": "filter:posts.custom_profile_info", "method": "addLinkbackToArticle"
@@ -16,11 +16,11 @@
 		}
 	],
 	"scripts": [
-        "public/lib/main.js"
-    ],
+          "public/lib/main.js"
+        ],
 	"staticDirs": {
 		"css": "public/css",
 		"lib": "public/lib"
 	},
-	"templates": "templates"
+	"templates": "./templates"
 }
